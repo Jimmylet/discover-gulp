@@ -1,73 +1,100 @@
-// Définition dependancy for execute tasks
+// Définition des dépendances dont on a besoin pour exécuter les tâches
 var
-  gulp = require('gulp'),
-  imagemin = require('gulp-imagemin'),
-  newer = require('gulp-newer'),
-  size = require('gulp-size'),
-  del = require('del'),
-  gulpDestClean = require('gulp-dest-clean'),
-  sass = require('gulp-sass'),
-  imacss = require('gulp-imacss');
+    gulp = require('gulp'),
+    imagemin = require('gulp-imagemin'),
+    destclean = require('gulp-dest-clean'),
+    newer = require('gulp-newer'),
+    size = require('gulp-size'),
+    imacss = require('gulp-imacss'),
+    sass = require('gulp-sass'),
+    htmlclean = require('gulp-htmlclean'),
+    preprocess = require('gulp-preprocess'),
+    pkg = require('./package.json'),
+    del = require('del');
 
-// Definition generals variables for our gupfiles
+// Définition de quelques variables générales pour notre gulpfile
 var
-  source = 'source/',
-  dest = 'build/';
+    devBuild = ((process.env.NODE_ENV || 'development').trim().toLowerCase() !== 'production'),
+    source = 'source/',
+    dest = 'build/';
 
-// Definition variables for taslk (options tasks)
+// Définition de quelques variables liées à nos tâches (options de tâches)
 var
-  imageOptions = {
-    in: source + 'images/*.*',
-    out: dest + 'images/',
-    watch: source + 'images/*.*'
-  },
-  imageUriOptions = {
-    in: source + 'images/inline/*.*',
-    out: source + 'scss/images/',
-    filename: '_datauri.scss',
-    namespace: 'uri'
-  },
-  css = {
-    in: source + 'scss/main.scss',
-    out: dest + 'css/',
-    sassOpts: {
-      outputStyle: 'nested',
-      precision: 3,
-      errLogToConsole: true
+    imagesOpts = {
+        in: source + 'images/*.*',
+        out: dest + 'images/',
+        watch: source + 'images/*.*'
+    },
+    imageUriOpts = {
+        in: source + 'images/inline/*.*',
+        out: source + 'scss/images/',
+        filename: '_datauri.scss',
+        namespace: 'img'
+    },
+    css = {
+        in: source + 'scss/main.scss',
+        watch: [source + 'scss/**/*'],
+        out: dest + 'css/',
+        sassOpts: {
+            outputStyle: 'expanded',
+            precision: 3,
+            errLogToConsole: true
+        }
+    },
+    html = {
+        in: source + '*.html',
+        watch: [source + '*.html', source + 'template/**/*'],
+        out: dest,
+        context: {
+            devBuild: devBuild,
+            author: pkg.author,
+            version: pkg.version
+        }
+    };
+
+
+// Définition des tâches
+gulp.task('clean', function () {
+    del([dest + '*']);
+});
+
+gulp.task('images', function () {
+    return gulp.src(imagesOpts.in)
+        .pipe(destclean(imagesOpts.out))
+        .pipe(newer(imagesOpts.out))
+        .pipe(size({title: 'Images size before compression: ', showFiles: true}))
+        .pipe(imagemin())
+        .pipe(size({title: 'Images size after compression: ', showFiles: true}))
+        .pipe(gulp.dest(imagesOpts.out));
+});
+
+gulp.task('imageuri', function () {
+    return gulp.src(imageUriOpts.in)
+        .pipe(imagemin())
+        .pipe(imacss(imageUriOpts.filename, imageUriOpts.namespace))
+        .pipe(gulp.dest(imageUriOpts.out));
+});
+
+gulp.task('sass', function () {
+    return gulp.src(css.in)
+        .pipe(sass(css.sassOpts))
+        .pipe(gulp.dest(css.out));
+});
+
+gulp.task('html', function () {
+    var page = gulp.src(html.in).pipe(preprocess({context: html.context}));
+    if (!devBuild) {
+        page = page
+            .pipe(size({title:'HTML avant minification:'}))
+            .pipe(htmlclean())
+            .pipe(size({title:'HTML après minification:'}));
     }
-  };
-
-
-// Task definitions
-gulp.task('clean', function(){
-  del( [dest + '*'] );
+    return page.pipe(gulp.dest(html.out));
 });
 
-gulp.task('images', function(){
-  return gulp.src(imageOptions.in) // Prendre les fichiers dans imageOptions.in
-    .pipe(gulpDestClean(imageOptions.out))
-    .pipe(newer(imageOptions.out)) // Pour vérifier si il y a du nouveau dans le dossier
-    .pipe(size({title: 'Images size before compression: ', showFiles: true}))
-    .pipe(imagemin())
-    .pipe(size({title: 'Images size after compression: ', showFiles: true}))
-    .pipe(gulp.dest(imageOptions.out)); // .pipe pour enchainer les actions, donner le chemin de destination
-
-});
-
-gulp.task('imageuri', function() {
-  return gulp.src(imageUriOptions.in)
-    .pipe(imagemin())
-    .pipe(imacss(imageUriOptions.filename, imageUriOptions.namespace))
-    .pipe(gulp.dest(imageUriOptions.out));
-});
-
-gulp.task('sass', function(){
-  return gulp.src(css.in)
-    .pipe(sass(css.sassOpts))
-    .pipe(gulp.dest(css.out));
-});
-
-// Tâche par défaut exécutée lorsqu'on tape juste gulp dans le terminal
-gulp.task('default', ['images'], function(){
-  gulp.watch(imageOptions.watch, ['images']);
+// Tâche par défaut exécutée lorsqu’on tape juste *gulp* dans le terminal
+gulp.task('default', ['images', 'sass'], function () {
+    gulp.watch(html.watch, ['html']);
+    gulp.watch(imagesOpts.watch, ['images']);
+    gulp.watch(css.watch, ['sass']);
 });
