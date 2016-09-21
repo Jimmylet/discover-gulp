@@ -10,6 +10,7 @@ var
     htmlclean = require('gulp-htmlclean'),
     preprocess = require('gulp-preprocess'),
     pkg = require('./package.json'),
+    browserSync = require('browser-sync'),
     del = require('del');
 
 // Définition de quelques variables générales pour notre gulpfile
@@ -50,6 +51,14 @@ var
             author: pkg.author,
             version: pkg.version
         }
+    },
+    syncOptions = {
+      server: {
+        baseDir: dest,
+        index: 'index.html'
+      },
+      open: false,
+      notify: true
     };
 
 
@@ -78,7 +87,8 @@ gulp.task('imageuri', function () {
 gulp.task('sass', function () {
     return gulp.src(css.in)
         .pipe(sass(css.sassOpts))
-        .pipe(gulp.dest(css.out));
+        .pipe(gulp.dest(css.out))
+        .pipe(browserSync.reload({stream: true}));
 });
 
 gulp.task('html', function () {
@@ -92,9 +102,13 @@ gulp.task('html', function () {
     return page.pipe(gulp.dest(html.out));
 });
 
+gulp.task('browserSync', function() {
+  browserSync(syncOptions);
+});
+
 // Tâche par défaut exécutée lorsqu’on tape juste *gulp* dans le terminal
-gulp.task('default', ['images', 'sass'], function () {
-    gulp.watch(html.watch, ['html']);
+gulp.task('default', ['images', 'sass', 'html', 'browserSync'], function () {
+    gulp.watch(html.watch, ['html', browserSync.reload]);
     gulp.watch(imagesOpts.watch, ['images']);
     gulp.watch(css.watch, ['sass']);
 });
