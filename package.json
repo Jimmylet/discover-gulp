@@ -1,0 +1,23 @@
+{
+  "name": "mysite",
+  "version": "1.0.0",
+  "description": "A small test about Gulp",
+  "main": "build/index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jimmylet/discover-gulp.git"
+  },
+  "keywords": [
+    "Jimmy",
+    "Letecheur"
+  ],
+  "author": "Jimmy Letecheur",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Jimmylet/discover-gulp/issues"
+  },
+  "homepage": "https://github.com/Jimmylet/discover-gulp#readme"
+}
