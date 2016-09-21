@@ -4,7 +4,8 @@ var
   imagemin = require('gulp-imagemin'),
   newer = require('gulp-newer'),
   size = require('gulp-size'),
-  del = require('del');
+  del = require('del'),
+  gulpDestClean = require('gulp-dest-clean');
 
 // Definition generals variables for our gupfiles
 var
@@ -15,7 +16,8 @@ var
 var
   imageOptions = {
     in: source + 'images/*.*',
-    out: dest + 'images/'
+    out: dest + 'images/',
+    watch: source + 'images/*.*'
   };
 
 
@@ -26,6 +28,7 @@ gulp.task('clean', function(){
 
 gulp.task('images', function(){
   gulp.src(imageOptions.in) // Prendre les fichiers dans imageOptions.in
+    .pipe(gulpDestClean(imageOptions.out))
     .pipe(newer(imageOptions.out)) // Pour vérifier si il y a du nouveau dans le dossier
     .pipe(size({title: 'Images size before compression: ', showFiles: true}))
     .pipe(imagemin())
@@ -35,6 +38,6 @@ gulp.task('images', function(){
 });
 
 // Tâche par défaut exécutée lorsqu'on tape juste gulp dans le terminal
-gulp.task('default', function(){
-  imagemin = require('');
+gulp.task('default', ['images'], function(){
+  gulp.watch(imageOptions.watch, ['images']);
 });
